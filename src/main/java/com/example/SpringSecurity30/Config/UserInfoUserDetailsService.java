@@ -1,7 +1,7 @@
-package com.example.SpringSecurity30.config;
+package com.example.SpringSecurity30.Config;
 
-import com.example.SpringSecurity30.model.UserInfo;
-import com.example.SpringSecurity30.repository.UserInfoRepository;
+import com.example.SpringSecurity30.model.UserModel;
+import com.example.SpringSecurity30.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,13 +14,14 @@ import java.util.Optional;
 public class UserInfoUserDetailsService implements UserDetailsService {
 
     @Autowired
-    private UserInfoRepository repository;
+    private UserRepository repository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<UserInfo> userInfo = repository.findByName(username);
+        Optional<UserModel> userInfo = repository.findByFullName(username);
         return userInfo.map(UserInfoUserDetails::new)
                 .orElseThrow(() -> new UsernameNotFoundException("user not found " + username));
+
 
     }
 }
