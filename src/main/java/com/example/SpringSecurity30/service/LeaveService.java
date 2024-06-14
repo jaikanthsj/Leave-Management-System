@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -25,35 +24,43 @@ public class LeaveService {
     private EmpDetailsRepository empDetailsRepository;
 
     public String applyForLeave(Leave leave) {
-        // Example validations based on policy conditions
+        // Fetch employee details
+        Optional<EmpDetails> empDetails = empDetailsRepository.findByUserId(leave.getUserId());
+        if (empDetails.isEmpty()) {
+            return "Employee details not found.";
+        }
 
-        // Example: CL must be created before 5 working days
+        LocalDate today = LocalDate.now();
+
+        if ("SL".equals(leave.getType()) && empDetails.get().getSl_perMonth() == 0) {
+            return "No sick leaves left for this month.";
+        }
+
+        if("CL".equals(leave.getType()) && empDetails.get().getCl_perMonth() == 0){
+            return "No casual leaves left for this month.";
+        }
+
         if ("CL".equals(leave.getType())) {
-            LocalDate today = LocalDate.now();
             LocalDate fiveWorkingDaysBeforeStartDate = leave.getStartDate().minusDays(5); // Adjust this logic based on your actual business days calculation
             if (today.isAfter(fiveWorkingDaysBeforeStartDate)) {
                 return "CL must be created before 5 working days.";
             }
         }
 
-        // Example: SL must be taken in case of emergency
-
-
         if ("OL".equals(leave.getType())) {
-            LocalDate today = LocalDate.now();
-            LocalDate fiveWorkingDaysBeforeStartDate = leave.getStartDate().minusDays(10); // Adjust this logic based on your actual business days calculation
-            if (today.isAfter(fiveWorkingDaysBeforeStartDate)) {
+            LocalDate tenWorkingDaysBeforeStartDate = leave.getStartDate().minusDays(10); // Adjust this logic based on your actual business days calculation
+            if (today.isAfter(tenWorkingDaysBeforeStartDate)) {
                 return "EL must be created before 10 working days.";
             }
         }
 
         if ("SL".equals(leave.getType())) {
-            LocalDate today = LocalDate.now();
-            LocalDate fiveWorkingDaysBeforeStartDate = leave.getStartDate().minusDays(1); // Adjust this logic based on your actual business days calculation
-            if (today.isAfter(fiveWorkingDaysBeforeStartDate)) {
-                return "SL can be applied in emergency cases";
+            LocalDate oneWorkingDayBeforeStartDate = leave.getStartDate().minusDays(1); // Adjust this logic based on your actual business days calculation
+            if (today.isAfter(oneWorkingDayBeforeStartDate)) {
+                return "SL can be applied in emergency cases.";
             }
         }
+
         leaveRepository.save(leave);
         return "Leave applied successfully.";
     }
@@ -73,9 +80,11 @@ public class LeaveService {
                     switch (leave.getType()) {
                         case "SL":
                             empDetails.setSl(empDetails.getSl() - calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
+                            empDetails.setSl_perMonth(empDetails.getSl_perMonth() - calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
                             break;
                         case "CL":
                             empDetails.setCl(empDetails.getCl() - calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
+                            empDetails.setCl_perMonth(empDetails.getCl_perMonth() - calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
                             break;
                         case "EL":
                             empDetails.setEl(empDetails.getEl() - calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
@@ -84,7 +93,6 @@ public class LeaveService {
                             empDetails.setOl(empDetails.getOl()- calculateLeaveDays(leave.getStartDate(), leave.getEndDate()));
                             break;
                         default:
-                            // Handle unexpected leave types, if necessary
                             break;
                     }
                     empDetailsRepository.save(empDetails);
@@ -105,41 +113,36 @@ public class LeaveService {
     }
 
     private int calculateLeaveDays(LocalDate startDate, LocalDate endDate) {
-        // Logic to calculate number of leave days between start and end date
-        // Implement your logic here based on your requirements
-        // For simplicity, let's assume this calculates the number of days between two dates
         return (int) ChronoUnit.DAYS.between(startDate, endDate);
     }
 
     public String generateCsvForUser(Integer userId) throws IOException {
-        Optional<EmpDetails> empDetailsOpt = empDetailsRepository.findByUserId(userId);
-
-        if (empDetailsOpt.isPresent()) {
-            EmpDetails empDetails = empDetailsOpt.get();
-            String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            String fileName = getString(userId, todayDate, empDetails);
-
-            return fileName;
-        } else {
+        Optional<EmpDetails> empDetailsOpt = empDetailsRepository.findById(userId);
+        if (!empDetailsOpt.isPresent()) {
             throw new IllegalArgumentException("User not found");
         }
+
+        EmpDetails empDetails = empDetailsOpt.get();
+        String todayDate = LocalDate.now().toString();
+        return getString(userId, todayDate, empDetails);
     }
 
     private static String getString(Integer userId, String todayDate, EmpDetails empDetails) throws IOException {
         String fileName = userId + "_" + todayDate + ".csv";
 
         try (CSVWriter writer = new CSVWriter(new FileWriter(fileName))) {
-            // Write header
-            String[] header = { "UserId", "SL", "CL", "EL", "OL" };
+
+            String[] header = { "UserId", "SL", "CL", "EL", "OL", "CL Left for the Month" , "SL Left for the Month" };
             writer.writeNext(header);
 
-            // Write user details
             String[] data = {
                     empDetails.getUserId().toString(),
                     empDetails.getSl().toString(),
                     empDetails.getCl().toString(),
                     empDetails.getEl().toString(),
-                    empDetails.getOl().toString()
+                    empDetails.getOl().toString(),
+                    empDetails.getCl_perMonth().toString(),
+                    empDetails.getSl_perMonth().toString()
             };
             writer.writeNext(data);
         }

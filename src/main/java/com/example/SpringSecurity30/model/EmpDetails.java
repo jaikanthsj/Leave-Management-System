@@ -17,6 +17,24 @@ public class EmpDetails {
     private Integer cl; // Casual Leave balance
     private Integer el;
     private Integer ol;
+    private Integer sl_perMonth;
+    private Integer cl_perMonth;
+
+    public Integer getSl_perMonth() {
+        return sl_perMonth;
+    }
+
+    public void setSl_perMonth(Integer sl_perMonth) {
+        this.sl_perMonth = sl_perMonth;
+    }
+
+    public Integer getCl_perMonth() {
+        return cl_perMonth;
+    }
+
+    public void setCl_perMonth(Integer cl_perMonth) {
+        this.cl_perMonth = cl_perMonth;
+    }
 
     public Integer getOl() {
         return ol;

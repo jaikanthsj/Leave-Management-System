@@ -45,6 +45,8 @@ public class UserController {
             empDetails.setCl(12);
             empDetails.setEl(12);
             empDetails.setOl(4);
+            empDetails.setCl_perMonth(1);
+            empDetails.setSl_perMonth(1);
             empDetailsRepository.save(empDetails); // Save EmpDetails to the database
         }
 

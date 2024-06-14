@@ -1,5 +1,6 @@
 package com.example.SpringSecurity30.controller;
 
+import com.example.SpringSecurity30.model.EmpDetails;
 import com.example.SpringSecurity30.model.Leave;
 import com.example.SpringSecurity30.service.LeaveService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +72,7 @@ public class LeaveController {
             FileSystemResource resource = new FileSystemResource(csvFile);
 
             HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + csvFile.getName()); // This line triggers the download prompt
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + csvFile.getName());
             headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
             return ResponseEntity.ok()
@@ -84,5 +85,4 @@ public class LeaveController {
             return ResponseEntity.status(500).build();
         }
     }
-
 }
